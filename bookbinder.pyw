@@ -262,6 +262,24 @@ def _is_toc_file(name: str) -> bool:
     return bool(TOC_FILE_PATTERNS.search(name))
 
 
+def _safe_filename(name: str) -> str:
+    """Entfernt Zeichen, die in Dateinamen auf Windows/Linux nicht erlaubt sind."""
+    name = re.sub(r'[\\/:*?"<>|]', '', name)
+    name = re.sub(r'\s+', ' ', name).strip()
+    return name or "output"
+
+
+def _epub_title_as_filename(epub_path: str) -> str:
+    """Liest den Buchtitel aus den EPUB-Metadaten; fällt auf Dateinamen zurück."""
+    try:
+        import ebooklib as _el
+        book = _el.read_epub(epub_path, options={"ignore_ncx": False})
+        t = (book.title or "").strip()
+        return _safe_filename(t) if t else Path(epub_path).stem
+    except Exception:
+        return Path(epub_path).stem
+
+
 def convert(epub_path: str, out_path: str, log) -> int:
     try:
         import ebooklib
@@ -488,7 +506,7 @@ class App(tk.Tk):
 
         epub_path = self._epub_path
         out_path  = str(Path(self._var_out.get() or Path.home()) /
-                        (Path(epub_path).stem + ".pdf"))
+                        (_epub_title_as_filename(epub_path) + ".pdf"))
 
         def _worker():
             try:
@@ -509,7 +527,7 @@ class App(tk.Tk):
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1].endswith(".epub"):
         epub = sys.argv[1]
-        out  = sys.argv[2] if len(sys.argv) >= 3 else str(Path(epub).with_suffix(".pdf"))
+        out  = sys.argv[2] if len(sys.argv) >= 3 else str(Path(epub).parent / (_epub_title_as_filename(epub) + ".pdf"))
         convert(epub, out, print)
         sys.exit(0)
     App().mainloop()
