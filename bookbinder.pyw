@@ -118,6 +118,13 @@ def _clean_html(raw: str, item_name: str, images: dict) -> str:
     html = re.sub(r"<(/?)strong>", r"<\1b>", html, flags=re.IGNORECASE)
     html = re.sub(r"<(/?)em>",     r"<\1i>", html, flags=re.IGNORECASE)
 
+    # <p> und andere Block-Tags innerhalb von <td>/<th> herausflachen
+    # (fpdf2 unterstützt keine verschachtelten Block-Elemente in Tabellenzellen)
+    def _flatten_cell(m):
+        inner = re.sub(r"</?(?:p|div|h\d|blockquote)[^>]*>", " ", m.group(2), flags=re.IGNORECASE)
+        return m.group(1) + inner + m.group(3)
+    html = re.sub(r"(<t[dh][^>]*>)(.*?)(</t[dh]>)", _flatten_cell, html, flags=re.DOTALL|re.IGNORECASE)
+
     return html.strip()
 
 
