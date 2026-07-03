@@ -272,7 +272,7 @@ def _safe_filename(name: str) -> str:
 def _epub_title_as_filename(epub_path: str) -> str:
     """Liest den Buchtitel aus den EPUB-Metadaten; fällt auf Dateinamen zurück."""
     try:
-        import ebooklib as _el
+        from ebooklib import epub as _el
         book = _el.read_epub(epub_path, options={"ignore_ncx": False})
         t = (book.title or "").strip()
         return _safe_filename(t) if t else Path(epub_path).stem
